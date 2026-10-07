@@ -1,5 +1,6 @@
 using BusinessLayer.Interface;
 using BusinessLayer.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 
@@ -31,7 +32,7 @@ public class FundooController : ControllerBase
     [Route("login")]
     public IActionResult LoginUserBL(LoginModel login)
     {
-        ResponseModel<LoginModel> response = userBL.LoginUserBL(login);
+        ResponseModel<LoginResponseModel> response = userBL.LoginUserBL(login);
         if (response.IsSuccess)
         {
             return Ok(response);
@@ -43,6 +44,41 @@ public class FundooController : ControllerBase
     public void Default()
     {
         Console.WriteLine("Application is running");
+    }
+    
+    [Authorize]
+    [HttpGet]
+    [Route("profile")]
+    public IActionResult GetProfile()
+    {
+        Console.WriteLine("Profile is displayed");
+        return Ok("Profile is displayed");
+    }
+    
+    [Authorize]
+    [HttpPost]
+    [Route("forget-password")]
+    public async Task<IActionResult> ForgetPassword(ForgetPasswordModel forgetPasswordModel)
+    {
+        ResponseModel<string> responseModel = await userBL.ForgetPasswordBL(forgetPasswordModel);
+        if(responseModel.IsSuccess)
+        {
+            return Ok(responseModel);
+        }
+        return BadRequest(responseModel);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [Route("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
+    {
+        ResponseModel<string> responseModel = await userBL.ResetPassword(resetPasswordModel);
+        if (responseModel.IsSuccess)
+        {
+            return Ok(responseModel);
+        }
+        return BadRequest(responseModel);
     }
     
 }

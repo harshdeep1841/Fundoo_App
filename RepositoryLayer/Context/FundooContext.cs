@@ -8,5 +8,5 @@ public class FundooContext : DbContext
    
   public DbSet<UserEntity> Users { get; set; }
   
-   
+  public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; }
 }

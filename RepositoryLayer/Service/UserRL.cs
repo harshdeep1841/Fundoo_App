@@ -3,7 +3,6 @@ using Models;
 using RepositoryLayer.Context;
 using RepositoryLayer.Entity;
 using RepositoryLayer.Interface;
-
 namespace RepositoryLayer.Service;
 
 public class UserRL : IUserRL
@@ -46,36 +45,60 @@ public class UserRL : IUserRL
         return rm;
     }
 
-    public ResponseModel<LoginModel> LoginUserRL(LoginModel login)
+    public UserEntity? LoginUserRL(LoginModel login)
     {
         var user = context.Users.FirstOrDefault(u => u.Email == login.Email );
-        ResponseModel<LoginModel> rm = new ResponseModel<LoginModel>();
         
+        LoginResponseModel loginResponse = new LoginResponseModel();
+        loginResponse.Email = login.Email;
         if (user == null)
         {
-            rm.IsSuccess = false;
-            rm.Message = "Login failed due to invalid email";
-            rm.Data = null;
-            return rm;
+            return null;
         }
         
         var decryptedPassword = hasher.VerifyHashedPassword(user, user.Password, login.Password);
 
-        if (decryptedPassword == PasswordVerificationResult.Success)
-        {
-            rm.Message = "Login successful";
-            rm.IsSuccess = true;
-            rm.Data = login;
-        }
-        else
-        {
-            rm.IsSuccess = false;
-            rm.Message = "Login failed due to invalid password";
-            rm.Data = null; 
-        }
+        if (decryptedPassword == PasswordVerificationResult.Success) return user;
         
 
-        return rm;
+        return null;
+    }
+
+    public UserEntity? FindUserByEmail(string email)
+    {
+        return context.Users.FirstOrDefault(u => u.Email == email);
+    }
+
+    public void SaveResetToken(PasswordResetTokenEntity token)
+    {
+        context.PasswordResetTokens.Add(token);
+        context.SaveChanges();
+    }
+
+    public   PasswordResetTokenEntity? TokenExists(string token)
+    {
+        return  context.PasswordResetTokens.FirstOrDefault(tokens => tokens.TokenHash == token);
+    }
+    
+    public UserEntity? GetUserById(int userId)
+    {
+        return context.Users
+            .FirstOrDefault(user => user.UserId == userId);
+    }
+    
+    public void UpdatePassword(UserEntity user)
+    {
+        context.Users.Update(user);
+        context.SaveChanges();
+    }
+    
+    public void MarkResetTokenAsUsed(
+        PasswordResetTokenEntity resetToken)
+    {
+        resetToken.IsUsed = true;
+
+        context.PasswordResetTokens.Update(resetToken);
+        context.SaveChanges();
     }
     
 }
