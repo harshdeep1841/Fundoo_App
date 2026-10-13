@@ -9,4 +9,21 @@ public class FundooContext : DbContext
   public DbSet<UserEntity> Users { get; set; }
   
   public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; }
+  
+  public DbSet<ExternalLoginEntity> ExternalLogins { get; set; }
+
+  protected override void OnModelCreating(ModelBuilder modelBuilder)
+  {
+      base.OnModelCreating(modelBuilder);
+
+      modelBuilder.Entity<ExternalLoginEntity>()
+          .HasIndex(e => new { e.Provider, e.ProviderSubject })
+          .IsUnique();
+
+      modelBuilder.Entity<ExternalLoginEntity>()
+          .HasOne(e => e.User)
+          .WithMany()
+          .HasForeignKey(e => e.UserId)
+          .OnDelete(DeleteBehavior.Cascade);
+  }
 }

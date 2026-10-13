@@ -3,11 +3,17 @@ using BusinessLayer.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Security.Claims;
 
 namespace Fundoo.Controllers;
 
 [ApiController]
-[Route("/api/[controller]")]
+[Route("api/[controller]")]
 public class FundooController : ControllerBase
 {
     private IUserBL userBL;
@@ -55,7 +61,7 @@ public class FundooController : ControllerBase
         return Ok("Profile is displayed");
     }
     
-    [Authorize]
+    // [Authorize]
     [HttpPost]
     [Route("forget-password")]
     public async Task<IActionResult> ForgetPassword(ForgetPasswordModel forgetPasswordModel)
@@ -68,7 +74,7 @@ public class FundooController : ControllerBase
         return BadRequest(responseModel);
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPost]
     [Route("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
@@ -81,5 +87,62 @@ public class FundooController : ControllerBase
         return BadRequest(responseModel);
     }
     
+    [AllowAnonymous]
+    [HttpGet("google-login")]
+    public IActionResult GoogleLogin()
+    {
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = "/api/fundoo/google-complete"
+        };
+
+        return Challenge(properties, "GoogleOIDC");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("google-complete")]
+    public async Task<IActionResult> GoogleComplete()
+    {
+        var result = await HttpContext.AuthenticateAsync(
+            "ExternalCookie");
+
+        if (!result.Succeeded || result.Principal is null)
+        {
+            return Unauthorized(new
+            {
+                Message = "Google sign-in failed."
+            });
+        }
+
+        var principal = result.Principal;
+
+        var googleSubject =
+            principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? principal.FindFirst("sub")?.Value;
+
+        var email =
+            principal.FindFirst(ClaimTypes.Email)?.Value
+            ?? principal.FindFirst("email")?.Value;
+
+        if (string.IsNullOrWhiteSpace(googleSubject) ||
+            string.IsNullOrWhiteSpace(email))
+        {
+            await HttpContext.SignOutAsync("ExternalCookie");
+
+            return Unauthorized(new
+            {
+                Message = "Required Google identity claims are missing."
+            });
+        }
+
+        await HttpContext.SignOutAsync("ExternalCookie");
+
+        return Ok(new
+        {
+            Message = "Google identity verified successfully.",
+            Email = email,
+            GoogleSubject = googleSubject
+        });
+    }
 }
 
