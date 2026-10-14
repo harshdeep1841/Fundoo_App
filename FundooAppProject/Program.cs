@@ -68,6 +68,9 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddScoped<IUserBL, UserBL>();
 builder.Services.AddScoped<IUserRL, UserRL>();
+builder.Services.AddScoped<INotesBL, NotesBL>();
+builder.Services.AddScoped<INotesRL, NotesRL>();
+
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<EmailClient>();

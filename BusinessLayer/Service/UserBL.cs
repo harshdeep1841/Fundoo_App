@@ -232,7 +232,6 @@ public class UserBL : IUserBL
         var key = Encoding.UTF8.GetBytes(
             configuration["Jwt:Key"]
         );
-
         try
         {
             var principal = tokenHandler.ValidateToken(

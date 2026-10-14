@@ -59,6 +59,7 @@ public class FundooController : ControllerBase
     {
         Console.WriteLine("Profile is displayed");
         return Ok("Profile is displayed");
+        
     }
     
     // [Authorize]
