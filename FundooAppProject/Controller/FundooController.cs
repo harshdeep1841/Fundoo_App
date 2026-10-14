@@ -107,7 +107,7 @@ public class FundooController : ControllerBase
         var result = await HttpContext.AuthenticateAsync(
             "ExternalCookie");
 
-        if (!result.Succeeded || result.Principal is null)
+        if (!result.Succeeded || result.Principal == null)
         {
             return Unauthorized(new
             {
@@ -115,35 +115,62 @@ public class FundooController : ControllerBase
             });
         }
 
-        var principal = result.Principal;
+        try
+        {
+            var principal = result.Principal;
 
-        var googleSubject =
-            principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? principal.FindFirst("sub")?.Value;
+            var googleSubject =
+                principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? principal.FindFirst("sub")?.Value;
 
-        var email =
-            principal.FindFirst(ClaimTypes.Email)?.Value
-            ?? principal.FindFirst("email")?.Value;
+            var email =
+                principal.FindFirst(ClaimTypes.Email)?.Value
+                ?? principal.FindFirst("email")?.Value;
 
-        if (string.IsNullOrWhiteSpace(googleSubject) ||
-            string.IsNullOrWhiteSpace(email))
+            var emailVerified =
+                principal.FindFirst("email_verified")?.Value;
+
+            var firstName =
+                principal.FindFirst(ClaimTypes.GivenName)?.Value
+                ?? principal.FindFirst("given_name")?.Value
+                ?? string.Empty;
+
+            var lastName =
+                principal.FindFirst(ClaimTypes.Surname)?.Value
+                ?? principal.FindFirst("family_name")?.Value
+                ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(googleSubject) ||
+                string.IsNullOrWhiteSpace(email) ||
+                !string.Equals(
+                    emailVerified,
+                    "true",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized(new
+                {
+                    Message =
+                        "Google identity or verified email is missing."
+                });
+            }
+
+            var response = userBL.GoogleLoginBL(
+                email,
+                googleSubject,
+                firstName,
+                lastName);
+
+            if (!response.IsSuccess)
+            {
+                return Conflict(response);
+            }
+
+            return Ok(response);
+        }
+        finally
         {
             await HttpContext.SignOutAsync("ExternalCookie");
-
-            return Unauthorized(new
-            {
-                Message = "Required Google identity claims are missing."
-            });
         }
-
-        await HttpContext.SignOutAsync("ExternalCookie");
-
-        return Ok(new
-        {
-            Message = "Google identity verified successfully.",
-            Email = email,
-            GoogleSubject = googleSubject
-        });
     }
 }
 

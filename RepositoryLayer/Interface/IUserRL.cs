@@ -30,5 +30,11 @@ public interface IUserRL
         string provider,
         string providerSubject
     );
+    
+    UserEntity CreateGoogleUserWithExternalLogin(
+        string email,
+        string firstName,
+        string lastName,
+        string providerSubject);
 
 }
