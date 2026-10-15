@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+        <HintPath>..\..\..\.dotnet\packs\Microsoft.AspNetCore.App.Ref\8.0.29\ref\net8.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RepositoryLayer\RepositoryLayer.csproj" />
+    </ItemGroup>
+
+</Project>

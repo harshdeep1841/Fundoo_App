@@ -7,9 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\EmailModel\EmailModel.csproj" />
+      <ProjectReference Include="..\Middleware\Middleware.csproj" />
       <ProjectReference Include="..\Models\Models.csproj" />
       <ProjectReference Include="..\RepositoryLayer\RepositoryLayer.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.18.1" />
+      <PackageReference Include="MimeKit" Version="4.18.1" />
+      <PackageReference Include="NLog.Web.AspNetCore" Version="6.2.1" />
     </ItemGroup>
 
 </Project>

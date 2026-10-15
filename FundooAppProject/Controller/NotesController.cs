@@ -84,7 +84,7 @@ public class NotesController : ControllerBase
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> EditNote(
-        int id, [FromBody] EditNoteModel model)
+        int id,  EditNoteModel model)
     {
         if (CurrentUserId is not int userId)
             return Unauthorized();

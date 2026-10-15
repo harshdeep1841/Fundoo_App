@@ -9,7 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Models;
 using RepositoryLayer.Entity;
 using RepositoryLayer.Interface;
-
+using Middleware.Service;
 namespace BusinessLayer.Service;
 
 public class UserBL : IUserBL
@@ -227,85 +227,11 @@ public class UserBL : IUserBL
             };
         }
 
-        var tokenHandler = new JwtSecurityTokenHandler();
+        int userId;
 
-        var key = Encoding.UTF8.GetBytes(
-            configuration["Jwt:Key"]
-        );
         try
         {
-            var principal = tokenHandler.ValidateToken(
-                model.Token,
-                new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
-
-                    IssuerSigningKey =
-                        new SymmetricSecurityKey(key)
-                },
-                out SecurityToken validatedToken
-            );
-
-            var purpose = principal.FindFirst("purpose")?.Value;
-
-            if (purpose != "password-reset")
-            {
-                return new ResponseModel<string>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid reset token.",
-                    Data = null
-                };
-            }
-
-            var userIdClaim =
-                principal.FindFirst(ClaimTypes.NameIdentifier);
-
-            if (userIdClaim == null)
-            {
-                return new ResponseModel<string>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid reset token.",
-                    Data = null
-                };
-            }
-
-            int userId = int.Parse(userIdClaim.Value);
-
-            UserEntity? user = userRL.GetUserById(userId);
-
-            if (user == null)
-            {
-                return new ResponseModel<string>
-                {
-                    IsSuccess = false,
-                    Message = "User not found.",
-                    Data = null
-                };
-            }
-
-            var passwordHasher = new PasswordHasher<UserEntity>();
-
-            user.Password = passwordHasher.HashPassword(
-                user,
-                model.NewPassword
-            );
-
-            userRL.UpdatePassword(user);
-
-            return new ResponseModel<string>
-            {
-                IsSuccess = true,
-                Message = "Your password has been reset successfully.",
-                Data = null
-            };
+            userId = jwtService.ValidatePasswordResetToken(model.Token);
         }
         catch (SecurityTokenExpiredException)
         {
@@ -325,7 +251,35 @@ public class UserBL : IUserBL
                 Data = null
             };
         }
-    }
+
+        UserEntity? user = userRL.GetUserById(userId);
+
+        if (user == null)
+        {
+            return new ResponseModel<string>
+            {
+                IsSuccess = false,
+                Message = "User not found.",
+                Data = null
+            };
+        }
+
+        var passwordHasher = new PasswordHasher<UserEntity>();
+
+        user.Password = passwordHasher.HashPassword(
+            user,
+            model.NewPassword
+        );
+
+        userRL.UpdatePassword(user);
+
+        return new ResponseModel<string>
+        {
+            IsSuccess = true,
+            Message = "Your password has been reset successfully.",
+            Data = null
+        };
+    }   
     
     
     public ResponseModel<LoginResponseModel> GoogleLoginBL(

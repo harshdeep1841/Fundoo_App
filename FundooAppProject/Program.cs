@@ -1,6 +1,7 @@
 using System.Text;
 using BusinessLayer.Interface;
 using BusinessLayer.Service;
+using EmailService.Interface;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,10 +11,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Middleware.Service;
+using NLog;
 using RepositoryLayer.Context;
 using RepositoryLayer.Entity;
 using RepositoryLayer.Interface;
 using RepositoryLayer.Service;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+using NLog.Web;
+NLog.Common.InternalLogger.LogLevel = NLog.LogLevel.Debug;
+NLog.Common.InternalLogger.LogToConsole = true;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +32,8 @@ var keyDirectory = Path.Combine(
 
 Directory.CreateDirectory(keyDirectory);
 
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 builder.Services
     .AddDataProtection()
     .SetApplicationName("FundooOIDCTestV2")
@@ -65,12 +75,13 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
+builder.Services
+    .AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IUserBL, UserBL>();
 builder.Services.AddScoped<IUserRL, UserRL>();
 builder.Services.AddScoped<INotesBL, NotesBL>();
 builder.Services.AddScoped<INotesRL, NotesRL>();
-
+builder.Services.AddScoped<IEmailService , EmailService.Service.EmailService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<EmailClient>();
@@ -170,7 +181,11 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseExceptionHandler();
+var logger = app.Services
+    .GetRequiredService<Microsoft.Extensions.Logging.ILogger<Program>>();
 
+logger.LogInformation("Fundoo application started");
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

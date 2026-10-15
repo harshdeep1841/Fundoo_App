@@ -9,6 +9,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
+using NLog;
 
 namespace Fundoo.Controllers;
 
@@ -17,6 +18,8 @@ namespace Fundoo.Controllers;
 public class FundooController : ControllerBase
 {
     private IUserBL userBL;
+    private static readonly Logger logger =
+        LogManager.GetCurrentClassLogger();
     public FundooController(IUserBL userBL)
     {
         this.userBL = userBL;
@@ -43,12 +46,21 @@ public class FundooController : ControllerBase
         {
             return Ok(response);
         }
-        return BadRequest(response);
+        else
+        {
+            logger.Error("TEST ERROR LOG");
+            logger.Info("TEST INFO LOG");
+
+            return BadRequest(response);
+        }
+      
     }
 
     [HttpGet]
     public void Default()
     {
+       // logger.Fatal("fatal log");
+       logger.Info("info log");
         Console.WriteLine("Application is running");
     }
     
