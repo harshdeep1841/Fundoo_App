@@ -1,5 +1,5 @@
 using System.Net.Mail;
-using EmailService.Interface;
+using BusinessLayer.Interface;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
@@ -7,8 +7,8 @@ using MimeKit;
 using MimeKit.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
-namespace EmailService.Service;
-
+namespace BusinessLayer.Service;
+using Model.EmailModel;
 public class EmailService : IEmailService
 {
 
@@ -20,7 +20,7 @@ public class EmailService : IEmailService
         this.configuration = configuration;
     }
 
-    public async Task SendEmail(EmailModel.Model.EmailModel email)
+    public async Task SendEmail(EmailModel email)
     {
         
         var message = new MimeMessage();
@@ -66,4 +66,5 @@ public class EmailService : IEmailService
     
         
     }
+
 }

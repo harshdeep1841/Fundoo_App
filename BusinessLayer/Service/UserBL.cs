@@ -5,11 +5,14 @@ using System.Text;
 using BusinessLayer.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Models;
 using RepositoryLayer.Entity;
 using RepositoryLayer.Interface;
 using Middleware.Service;
+using Model.EmailModel;
+
 namespace BusinessLayer.Service;
 
 public class UserBL : IUserBL
@@ -17,13 +20,13 @@ public class UserBL : IUserBL
     public IUserRL userRL;
     public JwtService jwtService;
     public EmailClient client;
-    public IConfiguration configuration;
-    public UserBL(IUserRL userRL , JwtService jwtService , EmailClient client, IConfiguration configuration)
+    public ILogger<UserBL> logger;
+    public UserBL(IUserRL userRL , JwtService jwtService , EmailClient client , ILogger<UserBL> logger)
     {
         this.userRL = userRL;
         this.jwtService = jwtService;
         this.client = client;
-        this.configuration = configuration;
+        this.logger = logger;
     }
     
     public ResponseModel<RegistrationModel> RegisterUserBL(RegistrationModel register)
@@ -60,7 +63,7 @@ public class UserBL : IUserBL
 //     { UserEntity? userEntity =   userRL.FindUserByEmail(model.Email);
 //         if (userEntity == null)
 //         { return null; }
-//         var tokenBytes = RandomNumberGenerator.GetBytes(32);
+ //        var tokenBytes = RandomNumberGenerator.GetBytes(32);
 //         string token = Convert.ToHexString(tokenBytes);
 //         DateTime expireAt = DateTime.UtcNow.AddMinutes(15);
 //         string tokenHash = Convert.ToHexString(
@@ -114,7 +117,7 @@ public class UserBL : IUserBL
 
         var token = jwtService.GenerateResetToken(user);
 
-        var emailModel = new EmailModel.Model.EmailModel()
+        var emailModel = new EmailModel()
         {
             To = user.Email,
             Subject = "Fundoo Password Reset",
@@ -124,7 +127,22 @@ public class UserBL : IUserBL
                     This token will expire in 15 minutes.
                     """
         };
-       await client.SendEmail(emailModel);
+        bool emailSent = await client.SendEmail(emailModel);
+
+        if (!emailSent)
+        {
+            logger.LogWarning(
+                "Password reset email could not be sent.");
+
+            return new ResponseModel<string>(
+                false,
+                "Unable to process the password reset request.",
+                null
+            );
+        }
+
+// Continue with your success response.
+     
         return new ResponseModel<string>
         {
             IsSuccess = true,

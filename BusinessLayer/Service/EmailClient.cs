@@ -1,17 +1,49 @@
-using System.Net.Http.Json;
+using MailKit.Net.Smtp;
+using Microsoft.Extensions.Logging;
+using System.Net.Sockets;
+using BusinessLayer.Interface;
+using Model.EmailModel;
 
 namespace BusinessLayer.Service;
 
 public class EmailClient
 {
-    public HttpClient Client { get; }
-    public EmailClient(HttpClient client)
+    private readonly IEmailService emailService;
+    private readonly ILogger<EmailClient> logger;
+
+    public EmailClient(
+        IEmailService emailService,
+        ILogger<EmailClient> logger)
     {
-        Client = client;
+        this.emailService = emailService;
+        this.logger = logger;
     }
 
-    public async Task SendEmail(EmailModel.Model.EmailModel model)
+    public async Task<bool> SendEmail(
+        EmailModel model)
     {
-        await Client.PostAsJsonAsync("http://localhost:5015/email/send", model);
+        try
+        {
+            await emailService.SendEmail(model);
+
+            logger.LogInformation("Email sending completed.");
+
+            return true;
+        }
+        catch (SmtpCommandException ex)
+        {
+            logger.LogWarning(ex, "Email delivery was rejected.");
+            return false;
+        }
+        catch (SmtpProtocolException ex)
+        {
+            logger.LogError(ex, "SMTP protocol failure.");
+            return false;
+        }
+        catch (SocketException ex)
+        {
+            logger.LogError(ex, "SMTP connection failed.");
+            return false;
+        }
     }
 }
