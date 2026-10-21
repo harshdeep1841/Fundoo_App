@@ -5,7 +5,7 @@ namespace RepositoryLayer.Interface;
 
 public interface IUserRL
 {
-    public ResponseModel<RegistrationModel> RegisterUserRL(RegistrationModel register);
+    public void RegisterUserRL(UserEntity user);
     public UserEntity? LoginUserRL(LoginModel login);
     public UserEntity? FindUserByEmail(string email);
     public void SaveResetToken(PasswordResetTokenEntity token);

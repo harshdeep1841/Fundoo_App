@@ -1,9 +1,9 @@
-using EmailService.Interface;
+using BusinessLayer.Interface;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Model.EmailModel;
 
 namespace EmailController.Controller;
-using EmailModel.Model;
 [ApiController]
 [Route("[controller]")]
 public class EmailController : ControllerBase

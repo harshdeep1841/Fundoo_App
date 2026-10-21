@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using BusinessLayer.Interface;
+using BusinessLayer.Service.PasswordHandler;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -21,43 +22,117 @@ public class UserBL : IUserBL
     public JwtService jwtService;
     public EmailClient client;
     public ILogger<UserBL> logger;
-    public UserBL(IUserRL userRL , JwtService jwtService , EmailClient client , ILogger<UserBL> logger)
+    public PasswordService passwordService;
+    public UserBL(IUserRL userRL , JwtService jwtService , EmailClient client , ILogger<UserBL> logger, PasswordService passwordService)
     {
         this.userRL = userRL;
         this.jwtService = jwtService;
         this.client = client;
         this.logger = logger;
+        this.passwordService = passwordService;
     }
     
-    public ResponseModel<RegistrationModel> RegisterUserBL(RegistrationModel register)
+    // public ResponseModel<RegistrationModel> RegisterUserBL(RegistrationModel register)
+    // {
+    //     return userRL.RegisterUserRL(register);
+    // }
+    
+    public ResponseModel<string> RegisterUserBL(RegistrationModel model)
     {
-        return userRL.RegisterUserRL(register);
+        var (hash, salt) = passwordService.HashPassword(model.Password);
+
+        var user = new UserEntity
+        {
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            Email = model.Email,
+            PhoneNumber = model.ContactNumber,
+
+            Password = hash,
+            Salt = salt
+        };
+
+        userRL.RegisterUserRL(user);
+
+        return new ResponseModel<string>
+        {
+            IsSuccess = true,
+            Message = "Registration successful.",
+            Data = user.Email
+        };
     }
 
-    public ResponseModel<LoginResponseModel> LoginUserBL(LoginModel login)
+    // public ResponseModel<LoginResponseModel> LoginUserBL(LoginModel login)
+    // {
+    //    
+    //     
+    //     UserEntity? userEntity =   userRL.LoginUserRL(login);
+    //     ResponseModel<LoginResponseModel> rm = new ResponseModel<LoginResponseModel>();
+    //     if (userEntity == null)
+    //     {
+    //         rm.IsSuccess = false;
+    //         rm.Message = "login email or password is wrong";
+    //         rm.Data = null;
+    //     }
+    //     else
+    //     {
+    //         rm.IsSuccess = true;
+    //         rm.Message = "login success";
+    //         rm.Data = new LoginResponseModel
+    //         {
+    //             Email = userEntity.Email,
+    //             Token = jwtService.GenerateToken(userEntity)
+    //         };
+    //     }
+    //     return rm;
+    // }
+    
+    
+    public ResponseModel<LoginResponseModel> LoginUserBL(
+        LoginModel loginModel)
     {
-       
-        
-        UserEntity? userEntity =   userRL.LoginUserRL(login);
-        ResponseModel<LoginResponseModel> rm = new ResponseModel<LoginResponseModel>();
-        if (userEntity == null)
+        UserEntity? user = userRL.FindUserByEmail(
+            loginModel.Email
+        );
+
+        if (user == null)
         {
-            rm.IsSuccess = false;
-            rm.Message = "login email or password is wrong";
-            rm.Data = null;
-        }
-        else
-        {
-            rm.IsSuccess = true;
-            rm.Message = "login success";
-            rm.Data = new LoginResponseModel
+            return new ResponseModel<LoginResponseModel>
             {
-                Email = userEntity.Email,
-                Token = jwtService.GenerateToken(userEntity)
+                IsSuccess = false,
+                Message = "Invalid email or password.",
+                Data = null
             };
         }
-        return rm;
+
+        bool isPasswordValid = passwordService.VerifyPassword(
+            loginModel.Password,
+            user.Password,
+            user.Salt
+        );
+
+        if (!isPasswordValid)
+        {
+            return new ResponseModel<LoginResponseModel>
+            {
+                IsSuccess = false,
+                Message = "Invalid email or password.",
+                Data = null
+            };
+        }
+
+        return new ResponseModel<LoginResponseModel>
+        {
+            IsSuccess = true,
+            Message = "Login successful.",
+            Data = new LoginResponseModel
+            {
+                Email = user.Email,
+                Token = jwtService.GenerateToken(user)
+            }
+        };
     }
+
 
 //     public async  Task<ResponseModel<string>> ForgetPasswordBL(ForgetPasswordModel model)
 //     { UserEntity? userEntity =   userRL.FindUserByEmail(model.Email);

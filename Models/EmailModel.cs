@@ -1,4 +1,4 @@
-namespace EmailModel.Model;
+namespace Model.EmailModel;
 
 public class EmailModel
 {

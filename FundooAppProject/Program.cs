@@ -1,7 +1,7 @@
 using System.Text;
 using BusinessLayer.Interface;
 using BusinessLayer.Service;
-using EmailService.Interface;
+using BusinessLayer.Service.PasswordHandler;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Middleware.Service;
@@ -77,15 +78,25 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services
     .AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddScoped<IUserBL, UserBL>();
 builder.Services.AddScoped<IUserRL, UserRL>();
 builder.Services.AddScoped<INotesBL, NotesBL>();
 builder.Services.AddScoped<INotesRL, NotesRL>();
-builder.Services.AddScoped<IEmailService , EmailService.Service.EmailService>();
+builder.Services.AddScoped<IEmailService ,EmailService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<EmailClient>();
+builder.Services.AddScoped<PasswordService>();
 builder.Services.AddHttpClient();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration["Redis:ConnectionString"];
+
+    options.InstanceName = "Fundoo:";
+});
+
 
 builder.Services.AddDbContext<FundooContext>(options =>
 {
@@ -170,7 +181,7 @@ builder.Services
         options.UsePkce = true;
 
         options.SaveTokens = false;
-        options.GetClaimsFromUserInfoEndpoint = true;
+        options.GetClaimsFromUserInfoEndpoint = false;
 
         options.Scope.Clear();
         options.Scope.Add("openid");
@@ -181,16 +192,26 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
-app.UseExceptionHandler();
-var logger = app.Services
-    .GetRequiredService<Microsoft.Extensions.Logging.ILogger<Program>>();
+//temp
+app.MapGet("/test-redis", async (IDistributedCache cache) =>
+{
+    await cache.SetStringAsync("test-string-key", "Redis is working 2!");
+    await cache.SetStringAsync(
+        "user:101:name",
+        "Harshdeep");
+    await cache.SetStringAsync("user:102:name", "Keshav");
+    string? value = await cache.GetStringAsync("test-key");
+   
 
-logger.LogInformation("Fundoo application started");
+    return Results.Ok(new { message = value });
+});
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseRouting();
 app.UseCors("AllowFrontend");

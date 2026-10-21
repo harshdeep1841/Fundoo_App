@@ -29,7 +29,7 @@ public class FundooController : ControllerBase
     [Route("register")]
     public IActionResult RegisterUser(RegistrationModel registrationModel)
     {
-        ResponseModel<RegistrationModel> response =   userBL.RegisterUserBL(registrationModel);
+        ResponseModel<string> response =   userBL.RegisterUserBL(registrationModel);
         if (response.IsSuccess)
         {
             return Ok(response);
@@ -121,10 +121,7 @@ public class FundooController : ControllerBase
 
         if (!result.Succeeded || result.Principal == null)
         {
-            return Unauthorized(new
-            {
-                Message = "Google sign-in failed."
-            });
+            return Unauthorized("Google sign-in failed.");
         }
 
         try
@@ -159,11 +156,7 @@ public class FundooController : ControllerBase
                     "true",
                     StringComparison.OrdinalIgnoreCase))
             {
-                return Unauthorized(new
-                {
-                    Message =
-                        "Google identity or verified email is missing."
-                });
+                return Unauthorized("Google identity or verified email is missing.");
             }
 
             var response = userBL.GoogleLoginBL(
