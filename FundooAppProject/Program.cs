@@ -1,7 +1,9 @@
 using System.Text;
+using BusinessLayer.Commands.Users;
 using BusinessLayer.Interface;
 using BusinessLayer.Service;
 using BusinessLayer.Service.PasswordHandler;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -89,6 +91,9 @@ builder.Services.AddScoped<PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<EmailClient>();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddHttpClient();
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(
+        typeof(RegisterUserCommand).Assembly));
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration =
