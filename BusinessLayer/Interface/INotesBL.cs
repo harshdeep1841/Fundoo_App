@@ -5,7 +5,7 @@ namespace BusinessLayer.Interface;
 
 public interface INotesBL
 {
-    Task<ResponseModel<NoteEntity>> AddNotes(
+    Task<ResponseModel<string>> AddNotes(
         NoteCreationModel model,
         int userId);
     

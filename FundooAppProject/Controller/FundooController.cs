@@ -1,18 +1,13 @@
-using BusinessLayer.Interface;
-using BusinessLayer.Service;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Models;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Security.Claims;
 using BusinessLayer.Commands.Users;
 using BusinessLayer.Queries.Users;
+using BusinessLayer.Interface;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using NLog;
+using Models;
+using System.Security.Claims;
 
 namespace Fundoo.Controllers;
 
@@ -20,115 +15,102 @@ namespace Fundoo.Controllers;
 [Route("api/[controller]")]
 public class FundooController : ControllerBase
 {
-    private IUserBL userBL;
+    private readonly IUserBL userBL;
+    private readonly ISender sender;
+
     private static readonly Logger logger =
         LogManager.GetCurrentClassLogger();
-    private readonly ISender sender;
-    public FundooController(IUserBL userBL , ISender sender)
+
+    public FundooController(IUserBL userBL, ISender sender)
     {
         this.userBL = userBL;
         this.sender = sender;
     }
 
-    [HttpPost]
-    [Route("register")]
-    public async Task<IActionResult> RegisterUser(RegistrationModel registrationModel)
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterUser(
+        [FromBody] RegistrationModel registrationModel)
     {
-        //ResponseModel<string> response =   userBL.RegisterUserBL(registrationModel);
         var command = new RegisterUserCommand
         {
             RegisterModel = registrationModel
         };
+
         var response = await sender.Send(command);
-        if (response.IsSuccess)
-        {
-            return Ok(response);
-        }
-        return BadRequest(response);
+
+        return response.IsSuccess
+            ? Ok(response)
+            : BadRequest(response);
     }
 
-    [HttpPost]
-    [Route("login")]
-    public async Task<IActionResult> LoginUserBL(LoginModel login)
+    [HttpPost("login")]
+    public async Task<IActionResult> LoginUser(
+        [FromBody] LoginModel login)
     {
-       // ResponseModel<LoginResponseModel> response = userBL.LoginUserBL(login);
-       
-       var query = new LoginUserQuery
-       {
-           LoginModel = login
-       };
-
-       var response = await sender.Send(query);
-        if (response.IsSuccess)
+        var query = new LoginUserQuery
         {
-            return Ok(response);
-        }
-        else
-        {
-            logger.Error("TEST ERROR LOG");
-            logger.Info("TEST INFO LOG");
+            LoginModel = login
+        };
 
+        var response = await sender.Send(query);
+
+        if (!response.IsSuccess)
+        {
+            logger.Warn("Login attempt failed.");
             return BadRequest(response);
         }
-      
+
+        return Ok(response);
     }
 
     [HttpGet]
-    public void Default()
+    public IActionResult Default()
     {
-       // logger.Fatal("fatal log");
-       logger.Info("info log");
-        Console.WriteLine("Application is running");
+        logger.Info("Application is running");
+        return Ok("Application is running");
     }
-    
+
     [Authorize]
-    [HttpGet]
-    [Route("profile")]
+    [HttpGet("profile")]
     public IActionResult GetProfile()
     {
-        Console.WriteLine("Profile is displayed");
         return Ok("Profile is displayed");
-        
-    }
-    
-    // [Authorize]
-    [HttpPost]
-    [Route("forget-password")]
-    public async Task<IActionResult> ForgetPassword(ForgetPasswordModel forgetPasswordModel)
-    {
-       // ResponseModel<string> responseModel = await userBL.ForgetPasswordBL(forgetPasswordModel);
-       var command = new ForgetPasswordCommand
-       {
-           ForgetPasswordModel = forgetPasswordModel
-       };
-
-       var response = await sender.Send(command);
-        if(response.IsSuccess)
-        {
-            return Ok(response);
-        }
-        return BadRequest(response);
     }
 
-    // [Authorize]
-    [HttpPost]
-    [Route("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
+    [AllowAnonymous]
+    [HttpPost("forget-password")]
+    public async Task<IActionResult> ForgetPassword(
+        [FromBody] ForgetPasswordModel model)
     {
-        //ResponseModel<string> responseModel = await userBL.ResetPassword(resetPasswordModel);
-        var command = new ResetPasswordCommand
+        var command = new ForgetPasswordCommand
         {
-            ResetPasswordModel = resetPasswordModel
+            ForgetPasswordModel = model
         };
 
         var response = await sender.Send(command);
-        if (response.IsSuccess)
-        {
-            return Ok(response);
-        }
-        return BadRequest(response);
+
+        return response.IsSuccess
+            ? Ok(response)
+            : BadRequest(response);
     }
-    
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordModel model)
+    {
+        var command = new ResetPasswordCommand
+        {
+            ResetPasswordModel = model
+        };
+
+        var response = await sender.Send(command);
+
+        return response.IsSuccess
+            ? Ok(response)
+            : BadRequest(response);
+    }
+
     [AllowAnonymous]
     [HttpGet("google-login")]
     public IActionResult GoogleLogin()
@@ -185,21 +167,20 @@ public class FundooController : ControllerBase
                     "true",
                     StringComparison.OrdinalIgnoreCase))
             {
-                return Unauthorized("Google identity or verified email is missing.");
+                return Unauthorized(
+                    "Google identity or verified email is missing.");
             }
 
+            // Google login remains in UserBL for now.
             var response = userBL.GoogleLoginBL(
                 email,
                 googleSubject,
                 firstName,
                 lastName);
 
-            if (!response.IsSuccess)
-            {
-                return Conflict(response);
-            }
-
-            return Ok(response);
+            return response.IsSuccess
+                ? Ok(response)
+                : Conflict(response);
         }
         finally
         {
@@ -207,4 +188,3 @@ public class FundooController : ControllerBase
         }
     }
 }
-

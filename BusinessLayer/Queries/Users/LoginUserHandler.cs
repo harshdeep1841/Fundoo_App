@@ -1,62 +1,25 @@
-using BusinessLayer.Service;
-using BusinessLayer.Service.PasswordHandler;
+using BusinessLayer.Interface;
 using MediatR;
-using Middleware.Service;
 using Models;
-using RepositoryLayer.Interface;
 
 namespace BusinessLayer.Queries.Users;
 
 public class LoginUserHandler
-    : IRequestHandler<LoginUserQuery, ResponseModel<LoginResponseModel>>
+    : IRequestHandler<LoginUserQuery,
+        ResponseModel<LoginResponseModel>>
 {
-    private readonly IUserRL userRL;
-    private readonly PasswordService passwordService;
-    private readonly JwtService jwtService;
+    private readonly IUserBL userBL;
 
-    public LoginUserHandler(
-        IUserRL userRL,
-        PasswordService passwordService,
-        JwtService jwtService)
+    public LoginUserHandler(IUserBL userBL)
     {
-        this.userRL = userRL;
-        this.passwordService = passwordService;
-        this.jwtService = jwtService;
+        this.userBL = userBL;
     }
 
     public Task<ResponseModel<LoginResponseModel>> Handle(
         LoginUserQuery request,
         CancellationToken cancellationToken)
     {
-        var model = request.LoginModel;
-
-        var user = userRL.FindUserByEmail(model.Email);
-
-        if (user == null ||
-            !passwordService.VerifyPassword(
-                model.Password,
-                user.Password,
-                user.Salt))
-        {
-            return Task.FromResult(
-                new ResponseModel<LoginResponseModel>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid email or password.",
-                    Data = null
-                });
-        }
-
-        var response = new ResponseModel<LoginResponseModel>
-        {
-            IsSuccess = true,
-            Message = "Login successful.",
-            Data = new LoginResponseModel
-            {
-                Email = user.Email,
-                Token = jwtService.GenerateToken(user)
-            }
-        };
+        var response = userBL.LoginUserBL(request.LoginModel);
 
         return Task.FromResult(response);
     }

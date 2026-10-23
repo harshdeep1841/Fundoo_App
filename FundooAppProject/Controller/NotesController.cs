@@ -1,5 +1,8 @@
 using System.Security.Claims;
+using BusinessLayer.Commands.Notes;
 using BusinessLayer.Interface;
+using BusinessLayer.Queries.Notes;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
@@ -13,7 +16,7 @@ namespace Fundoo.Controllers;
 public class NotesController : ControllerBase
 {
     private readonly INotesBL notesBL;
-
+    private ISender sender;
     private int? CurrentUserId =>
         int.TryParse(
             User.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -21,9 +24,10 @@ public class NotesController : ControllerBase
             ? userId
             : null;
 
-    public NotesController(INotesBL notesBL)
+    public NotesController(INotesBL notesBL , ISender sender)
     {
         this.notesBL = notesBL;
+        this.sender = sender;
     }
 
     [HttpPost]
@@ -38,7 +42,15 @@ public class NotesController : ControllerBase
             ));
         }
 
-        var response = await notesBL.AddNotes(model, userId);
+        var command = new AddNotesCommand()
+        {
+            Note = model,
+            UserId = userId
+        };
+        
+        var response = await sender.Send(command);
+
+        //var response = await notesBL.AddNotes(model, userId);
 
         if (!response.IsSuccess)
         {
@@ -62,7 +74,12 @@ public class NotesController : ControllerBase
             ));
         }
 
-        var response = await notesBL.ViewNotes(userId);
+        var command = new GetNotesQuery()
+        {
+            UserId = userId
+        };
+        var response = await sender.Send(command);
+        //var response = await notesBL.ViewNotes(userId);
 
         return Ok(response);
     }
@@ -89,8 +106,14 @@ public class NotesController : ControllerBase
         if (CurrentUserId is not int userId)
             return Unauthorized();
 
-        var response =
-            await notesBL.EditNote(id, model, userId);
+        var command = new UpdateNoteCommand()
+        {
+            Id = id,
+            Note = model,
+            UserId = userId
+        };
+        var response = await sender.Send(command);
+       // var response = await notesBL.EditNote(id, model, userId);
 
         if (!response.IsSuccess)
             return NotFound(response);
@@ -104,8 +127,13 @@ public class NotesController : ControllerBase
         if (CurrentUserId is not int userId)
             return Unauthorized();
 
-        var response =
-            await notesBL.DeleteNote(id, userId);
+        var command = new DeleteNotesCommand()
+        {
+            Id = id,
+            UserId = userId
+        };
+        var response = await sender.Send(command);
+        //var response = await notesBL.DeleteNote(id, userId);
 
         if (!response.IsSuccess)
             return NotFound(response);
@@ -118,9 +146,13 @@ public class NotesController : ControllerBase
     {
         if (CurrentUserId is not int userId)
             return Unauthorized();
-
-        var response =
-            await notesBL.ToggleArchive(id, userId);
+        var command = new ToggleArchiveCommand()
+        {
+            Id = id,
+            UserId = userId
+        };
+        var response = await sender.Send(command);
+       // var response = await notesBL.ToggleArchive(id, userId);
 
         if (!response.IsSuccess)
             return NotFound(response);
@@ -133,9 +165,13 @@ public class NotesController : ControllerBase
     {
         if (CurrentUserId is not int userId)
             return Unauthorized();
-
-        var response =
-            await notesBL.ToggleTrash(id, userId);
+        var command = new ToggleTrashCommand()
+        {
+            Id = id,
+            UserId = userId
+        };
+        var response = await sender.Send(command);
+        //var response = await notesBL.ToggleTrash(id, userId);
 
         if (!response.IsSuccess)
             return NotFound(response);

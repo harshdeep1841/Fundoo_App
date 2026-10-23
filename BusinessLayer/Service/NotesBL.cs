@@ -23,7 +23,7 @@ public class NotesBL : INotesBL
         this.cache = cache;
         this.logger = logger;
     }
-    public async Task<ResponseModel<NoteEntity>> AddNotes(
+    public async Task<ResponseModel<string>> AddNotes(
         NoteCreationModel model,
         int userId)
     {
@@ -39,10 +39,10 @@ public class NotesBL : INotesBL
 
         await InvalidateNotesCache(userId);
 
-        return new ResponseModel<NoteEntity>(
+        return new ResponseModel<string>(
             true,
             "Note created successfully.",
-            createdNote
+            createdNote.Title
         );
     }
     
@@ -206,4 +206,5 @@ public class NotesBL : INotesBL
 
         await cache.RemoveAsync(cacheKey);
     }
+
 }

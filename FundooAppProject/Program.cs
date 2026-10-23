@@ -1,4 +1,5 @@
 using System.Text;
+using BusinessLayer.Commands.Notes;
 using BusinessLayer.Commands.Users;
 using BusinessLayer.Interface;
 using BusinessLayer.Service;
@@ -94,6 +95,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(
         typeof(RegisterUserCommand).Assembly));
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(
+        typeof(AddNotesCommand).Assembly));
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration =
